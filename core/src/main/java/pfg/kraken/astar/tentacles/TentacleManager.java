@@ -54,6 +54,8 @@ public class TentacleManager implements Iterable<AStarNode>
 	private List<AStarNode> successeurs = new ArrayList<AStarNode>();
 //	private List<StaticObstacles> disabledObstaclesFixes = new ArrayList<StaticObstacles>();
 
+	private boolean forceCPUFallback = false; // Used if CUDA or OCL init failed
+
 	public TentacleManager(Log log, StaticObstacles fixes, DStarLite dstarlite, Config config, DynamicObstacles dynamicObs, Injector injector, ResearchProfileManager profiles, NodePool memorymanager) throws InjectorException
 	{
 		this.injector = injector;
@@ -170,26 +172,56 @@ public class TentacleManager implements Iterable<AStarNode>
 	public void computeTentacles(AStarNode current)
 	{
 		successeurs.clear();
-		for(TentacleType v : currentProfile)
+
+		try
 		{
-			if(v.isAcceptable(current.robot.getCinematique(), directionstrategyactuelle, courbureMax))
+			Config config = injector.getService(Config.class);
+
+			if(!forceCPUFallback && config.getString(ConfigInfoKraken.COMPUTE_MODE).equals("CUDA"))
 			{
-				AStarNode successeur = memorymanager.getNewNode();
-//				assert successeur.cameFromArcDynamique == null;
-				successeur.cameFromArcDynamique = null;
-				successeur.parent = current;
-				
-				current.robot.copy(successeur.robot);
-				if(injector.getExistingService(v.getComputer()).compute(current, v, arrivee, successeur))
+				//TODO CUDA
+				forceCPUFallback = true;
+				computeTentacles(current);
+			}
+			else if(!forceCPUFallback && config.getString(ConfigInfoKraken.COMPUTE_MODE).equals("OCL"))
+			{
+				//TODO OCL
+				forceCPUFallback = true;
+				computeTentacles(current);
+
+			}
+			else
+			{
+				//TODO CPU
+				for(TentacleType v : currentProfile)
 				{
-					// Compute the travel time
-					double duration = successeur.getArc().getDuree(successeur.parent.getArc(), vitesseMax, tempsArret, maxLinearAcceleration, deltaSpeedFromStop);
-					successeur.robot.suitArcCourbe(successeur.getArc(), duration);
-					successeur.g_score = duration;
-					successeurs.add(successeur);
+					if(v.isAcceptable(current.robot.getCinematique(), directionstrategyactuelle, courbureMax))
+					{
+						AStarNode successeur = memorymanager.getNewNode();
+//				assert successeur.cameFromArcDynamique == null;
+						successeur.cameFromArcDynamique = null;
+						successeur.parent = current;
+
+						current.robot.copy(successeur.robot);
+						if(injector.getExistingService(v.getComputer()).compute(current, v, arrivee, successeur))
+						{
+							// Compute the travel time
+							double duration = successeur.getArc().getDuree(successeur.parent.getArc(), vitesseMax, tempsArret, maxLinearAcceleration, deltaSpeedFromStop);
+							successeur.robot.suitArcCourbe(successeur.getArc(), duration);
+							successeur.g_score = duration;
+							successeurs.add(successeur);
+						}
+					}
 				}
 			}
+
 		}
+		catch (InjectorException e)
+		{
+			e.printStackTrace();
+		}
+
+
 		successeursIter = successeurs.iterator();
 	}
 
