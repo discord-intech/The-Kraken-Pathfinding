@@ -81,6 +81,8 @@ public enum ConfigInfoKraken implements ConfigInfo
 
 	CUDA_CORES(-1), // Number of cores used in CUDA computation mode, a too high number will fall back on GPU's maximum
 				    // Put -1 to use all available cores
+
+	CUDA_CLOTHO_PTX("ressources/CUDAClothoid.ptx"),
 			
 	/**
 	 * Interface graphique

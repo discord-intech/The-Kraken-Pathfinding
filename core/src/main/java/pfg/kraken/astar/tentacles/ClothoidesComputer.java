@@ -137,6 +137,11 @@ public class ClothoidesComputer implements TentacleComputer
 		}
 	}
 
+	public XY[] getTrajectoirePoints()
+	{
+		return trajectoire;
+	}
+
 	public void getTrajectoire(Tentacle depart, ClothoTentacle vitesse, StaticTentacle modified)
 	{
 		CinematiqueObs last = depart.getLast();
