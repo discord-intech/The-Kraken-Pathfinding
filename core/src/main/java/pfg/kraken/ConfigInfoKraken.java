@@ -67,6 +67,20 @@ public enum ConfigInfoKraken implements ConfigInfo
 	 */
 	NODE_MEMORY_POOL_SIZE(20000),
 	OBSTACLES_MEMORY_POOL_SIZE(50000), // nombre d'instances pour les obstacles
+
+	/**
+	 * Computation mode parameters
+	 */
+	COMPUTE_MODE("CPU"), // Can be either "CPU", "OCL" or "CUDA", any other string will be considered as "CPU"
+						 // In the event of a failure in initialization of OCL or CUDA, it will revert to CPU by default
+
+	CPU_THREADS(4), // Number of threads in CPU computation mode
+
+	OCL_CORES(-1), // Number of cores used in OCL computation mode, a too high number will fall back on GPU's maximum
+				   // Put -1 to use all available cores
+
+	CUDA_CORES(-1), // Number of cores used in CUDA computation mode, a too high number will fall back on GPU's maximum
+				    // Put -1 to use all available cores
 			
 	/**
 	 * Interface graphique

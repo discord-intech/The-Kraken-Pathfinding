@@ -13,3 +13,6 @@ logs/
 videos/
 target/
 clotho*.krk
+*.iml
+.idea/
+lib/
