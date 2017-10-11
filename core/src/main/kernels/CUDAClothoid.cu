@@ -1,4 +1,4 @@
-extern "C"
+
 void getCircleTrajectory(int nbPoint, float curvature, float orientation, float xRobot, float yRobot, float* xOutput, float* yOutput, float* orientationOutput, float* curvatureOutput)
 {
   float radius = 1000.f / curvature;
@@ -18,7 +18,6 @@ void getCircleTrajectory(int nbPoint, float curvature, float orientation, float 
   *curvatureOutput = curvature;
 }
 
-extern "C"
 void getStraightTrajectory(int nbPoint, float orientation, float xRobot, float yRobot, float* xOutput, float* yOutput, float* orientationOutput, float* curvatureOutput)
 {
   float cosv = cos(orientation);
@@ -30,9 +29,7 @@ void getStraightTrajectory(int nbPoint, float orientation, float xRobot, float y
   *orientationOutput = orientation;
 }
 
-
-extern "C"
-void compute(int nbPoint, float[] xUnitary, float[] yUnitary, int tentacleSpeed, float tentacleSquaredRootSpeed, float tentacleInitialCurvature, short tentaclePositive, short tentacleBack, short tentacleStop, float xRobot, float yRobot, float orientationRobot, float curvatureRobot, short goingForwardRobot, float* xOutput, float* yOutput, float* orientationOutput, float* curvatureOutput, short* goingForwardOutput)
+void compute(int nbPoint, float* xUnitary, float* yUnitary, int tentacleSpeed, float tentacleSquaredRootSpeed, float tentacleInitialCurvature, int16_t tentaclePositive, int16_t tentacleBack, int16_t tentacleStop, float xRobot, float yRobot, float orientationRobot, float curvatureRobot, int16_t goingForwardRobot, float* xOutput, float* yOutput, float* orientationOutput, float* curvatureOutput, int16_t* goingForwardOutput)
 {
   if(tentacleBack)
     orientationRobot += 3.1415f;
@@ -80,10 +77,9 @@ void compute(int nbPoint, float[] xUnitary, float[] yUnitary, int tentacleSpeed,
 }
 
 extern "C"
-__global__ void kernelFunc(float* xUnitary, float* yUnitary, int* tentacleSpeed, float* tentacleSquaredRootSpeed, float* tentacleInitialCurvature, short* tentaclePositive, short* tentacleBack, short* tentacleStop, float* xRobot, float* yRobot, float* orientationRobot, float* curvatureRobot, short* goingForwardRobot, float* xOutput, float* yOutput, float* orientationOutput, float* curvatureOutput, short* goingForwardOutput)
+__global__ void kernelFunc(float* xUnitary, float* yUnitary, int* tentacleSpeed, float* tentacleSquaredRootSpeed, float* tentacleInitialCurvature, int16_t* tentaclePositive, int16_t* tentacleBack, int16_t* tentacleStop, float* xRobot, float* yRobot, float* orientationRobot, float* curvatureRobot, int16_t* goingForwardRobot, float* xOutput, float* yOutput, float* orientationOutput, float* curvatureOutput, int16_t* goingForwardOutput)
 {
-    nbPoint = blockIdx.y;
+    int nbPoint = blockIdx.y;
 
-    compute(nbPoint, xUnitary, yUnitary, tentacleSpeed[0], tentacleSquaredRootSpeed[0], tentacleInitialCurvature[0], tentacleInitialCurvature[0], tentaclePositive[0], tentacleBack[0], tentacleStop[0], xRobot[0], yRobot[0], orientationRobot[0], curvatureRobot[0], goingForwardRobot[0], &xOutput[blockIdx.x * 5 + nbPoint], &yOutput[blockIdx.x * 5 + nbPoint], &orientationOutput[blockIdx.x * 5 + nbPoint], &curvatureOutput[blockIdx.x * 5 + nbPoint], &goingForwardOutput[blockIdx.x * 5 + nbPoint])
-
+    compute(nbPoint, xUnitary, yUnitary, tentacleSpeed[0], tentacleSquaredRootSpeed[0], tentacleInitialCurvature[0], tentacleInitialCurvature[0], tentaclePositive[0], tentacleBack[0], tentacleStop[0], xRobot[0], yRobot[0], orientationRobot[0], curvatureRobot[0], goingForwardRobot[0], &xOutput[blockIdx.x * 5 + nbPoint], &yOutput[blockIdx.x * 5 + nbPoint], &orientationOutput[blockIdx.x * 5 + nbPoint], &curvatureOutput[blockIdx.x * 5 + nbPoint], &goingForwardOutput[blockIdx.x * 5 + nbPoint]);
 }
