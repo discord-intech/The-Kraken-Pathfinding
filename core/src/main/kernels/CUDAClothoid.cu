@@ -1,35 +1,36 @@
+#include "math.h"
 
-void getCircleTrajectory(int nbPoint, float curvature, float orientation, float xRobot, float yRobot, float* xOutput, float* yOutput, float* orientationOutput, float* curvatureOutput)
+__device__ void getCircleTrajectory(int nbPoint, float curvature, float orientation, float xRobot, float yRobot, float* xOutput, float* yOutput, float* orientationOutput, float* curvatureOutput)
 {
   float radius = 1000.f / curvature;
-  float xDelta = cos(orientation + 3.1415f/2.f) * radius;
-  float yDelta = sin(orientation + 3.1415f/2) * radius;
+  float xDelta = cosf(orientation + 3.1415f/2.f) * radius;
+  float yDelta = sinf(orientation + 3.1415f/2.f) * radius;
   float xCenter = xRobot + xDelta;
   float yCenter = yRobot + yDelta;
-  float angle = (nbPoint+1) * 0.02f * curvature;
-  float cosv = cos(angle);
-  float sinv = sin(angle);
+  float angle = 0.02f * curvature;
+  float cosv = cosf(angle);
+  float sinv = sinf(angle);
   float tmp = xDelta;
   xDelta = cosv * xDelta - sinv * yDelta;
   yDelta = sinv * tmp + cosv * yDelta;
   *xOutput = xCenter - xDelta;
   *yOutput = yCenter - yDelta;
-  *orientationOutput = orientation + angle;
+  *orientationOutput = orientation + (nbPoint+1) * angle;
   *curvatureOutput = curvature;
 }
 
-void getStraightTrajectory(int nbPoint, float orientation, float xRobot, float yRobot, float* xOutput, float* yOutput, float* orientationOutput, float* curvatureOutput)
+__device__ void getStraightTrajectory(int nbPoint, float orientation, float xRobot, float yRobot, float* xOutput, float* yOutput, float* orientationOutput, float* curvatureOutput)
 {
-  float cosv = cos(orientation);
-  float sinv = sin(orientation);
-  float d = (nbPoint + 1) * 0.02f;
+  float cosv = cosf(orientation);
+  float sinv = sinf(orientation);
+  float d = (float)(nbPoint + 1) * 20.f;
   *xOutput = xRobot + d * cosv;
   *yOutput = yRobot + d * sinv;
   *curvatureOutput = 0;
   *orientationOutput = orientation;
 }
 
-void compute(int nbPoint, float* xUnitary, float* yUnitary, int tentacleSpeed, float tentacleSquaredRootSpeed, float tentacleInitialCurvature, int16_t tentaclePositive, int16_t tentacleBack, int16_t tentacleStop, float xRobot, float yRobot, float orientationRobot, float curvatureRobot, int16_t goingForwardRobot, float* xOutput, float* yOutput, float* orientationOutput, float* curvatureOutput, int16_t* goingForwardOutput)
+__device__ void compute(int nbPoint, float* xUnitary, float* yUnitary, int tentacleSpeed, float tentacleSquaredRootSpeed, float tentacleInitialCurvature, int16_t tentaclePositive, int16_t tentacleBack, int16_t tentacleStop, float xRobot, float yRobot, float orientationRobot, float curvatureRobot, int16_t goingForwardRobot, float* xOutput, float* yOutput, float* orientationOutput, float* curvatureOutput, int16_t* goingForwardOutput)
 {
   if(tentacleBack)
     orientationRobot += 3.1415f;
@@ -40,8 +41,8 @@ void compute(int nbPoint, float* xUnitary, float* yUnitary, int tentacleSpeed, f
   *goingForwardOutput = tentacleBack != goingForwardRobot;
   if(tentacleSpeed == 0)
   {
-    if(curvatureRobot == 0)
-      getStraightTrajectory(nbPoint, orientationRobot, yRobot, yRobot, xOutput, yOutput, orientationOutput, curvatureOutput);
+    if(curvatureRobot < 0.0001f && curvatureRobot > -0.0001f)
+      getStraightTrajectory(nbPoint, orientationRobot, xRobot, yRobot, xOutput, yOutput, orientationOutput, curvatureOutput);
     else
       getCircleTrajectory(nbPoint, curvatureRobot, orientationRobot, xRobot, yRobot, xOutput, yOutput, orientationOutput, curvatureOutput);
   }
@@ -57,12 +58,12 @@ void compute(int nbPoint, float* xUnitary, float* yUnitary, int tentacleSpeed, f
     if(tentacleSpeed < 0)
       orientationClotho = -orientationClotho;
     float base = orientationRobot  - orientationClotho;
-    float cosv = cos(base);
-    float sinv = sin(base);
-    sDepart += (nbPoint+1) * tentacleSquaredRootSpeed * 0.02f;
+    float cosv = cosf(base);
+    float sinv = sinf(base);
+    sDepart += ((float)(nbPoint+1) * tentacleSquaredRootSpeed * 0.02f);
 
-    xOutput = (xUnitary[pointDepart + tentacleSquaredRootSpeed * (nbPoint + 1)] - xUnitary[pointDepart]) * coeff;
-    yOutput = (yUnitary[pointDepart + tentacleSquaredRootSpeed * (nbPoint + 1)] - yUnitary[pointDepart]) * coeff;
+    *xOutput = (float)(xUnitary[(int)(pointDepart + (int)tentacleSquaredRootSpeed * (nbPoint + 1))] - xUnitary[pointDepart]) * coeff;
+    *yOutput = (float)(yUnitary[(int)(pointDepart + (int)tentacleSquaredRootSpeed * (nbPoint + 1))] - yUnitary[pointDepart]) * coeff;
     if(tentacleSpeed < 0)
       *yOutput = -*yOutput;
     float tmp = *xOutput;
@@ -71,7 +72,10 @@ void compute(int nbPoint, float* xUnitary, float* yUnitary, int tentacleSpeed, f
     *curvatureOutput = sDepart * tentacleSquaredRootSpeed;
     *orientationOutput = sDepart * sDepart;
     if(tentacleSpeed < 0)
+    {
       *orientationOutput = -*orientationOutput;
+      *curvatureOutput = -*curvatureOutput;
+    }
     *orientationOutput += base;
   }
 }
@@ -80,6 +84,7 @@ extern "C"
 __global__ void kernelFunc(float* xUnitary, float* yUnitary, int* tentacleSpeed, float* tentacleSquaredRootSpeed, float* tentacleInitialCurvature, int16_t* tentaclePositive, int16_t* tentacleBack, int16_t* tentacleStop, float* xRobot, float* yRobot, float* orientationRobot, float* curvatureRobot, int16_t* goingForwardRobot, float* xOutput, float* yOutput, float* orientationOutput, float* curvatureOutput, int16_t* goingForwardOutput)
 {
     int nbPoint = blockIdx.y;
+    int tentaculeNumber = blockIdx.x;
 
-    compute(nbPoint, xUnitary, yUnitary, tentacleSpeed[0], tentacleSquaredRootSpeed[0], tentacleInitialCurvature[0], tentacleInitialCurvature[0], tentaclePositive[0], tentacleBack[0], tentacleStop[0], xRobot[0], yRobot[0], orientationRobot[0], curvatureRobot[0], goingForwardRobot[0], &xOutput[blockIdx.x * 5 + nbPoint], &yOutput[blockIdx.x * 5 + nbPoint], &orientationOutput[blockIdx.x * 5 + nbPoint], &curvatureOutput[blockIdx.x * 5 + nbPoint], &goingForwardOutput[blockIdx.x * 5 + nbPoint]);
+    compute(nbPoint, xUnitary, yUnitary, tentacleSpeed[tentaculeNumber], tentacleSquaredRootSpeed[tentaculeNumber], tentacleInitialCurvature[tentaculeNumber], tentaclePositive[tentaculeNumber], tentacleBack[tentaculeNumber], tentacleStop[tentaculeNumber], xRobot[0], yRobot[0], orientationRobot[0], curvatureRobot[0], goingForwardRobot[0], &xOutput[5*tentaculeNumber + nbPoint], &yOutput[5*tentaculeNumber + nbPoint], &orientationOutput[5*tentaculeNumber + nbPoint], &curvatureOutput[5*tentaculeNumber + nbPoint], &goingForwardOutput[5*tentaculeNumber + nbPoint]);
 }

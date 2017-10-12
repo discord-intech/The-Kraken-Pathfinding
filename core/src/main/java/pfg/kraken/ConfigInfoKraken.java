@@ -71,7 +71,7 @@ public enum ConfigInfoKraken implements ConfigInfo
 	/**
 	 * Computation mode parameters
 	 */
-	COMPUTE_MODE("CPU"), // Can be either "CPU", "OCL" or "CUDA", any other string will be considered as "CPU"
+	COMPUTE_MODE("CUDA"), // Can be either "CPU", "OCL" or "CUDA", any other string will be considered as "CPU"
 						 // In the event of a failure in initialization of OCL or CUDA, it will revert to CPU by default
 
 	CPU_THREADS(4), // Number of threads in CPU computation mode
@@ -82,7 +82,7 @@ public enum ConfigInfoKraken implements ConfigInfo
 	CUDA_CORES(-1), // Number of cores used in CUDA computation mode, a too high number will fall back on GPU's maximum
 				    // Put -1 to use all available cores
 
-	CUDA_CLOTHO_PTX("ressources/CUDAClothoid.ptx"),
+	CUDA_CLOTHO_PTX("CUDAClothoid.ptx"),
 			
 	/**
 	 * Interface graphique
